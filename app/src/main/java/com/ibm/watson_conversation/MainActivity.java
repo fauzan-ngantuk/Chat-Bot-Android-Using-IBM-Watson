@@ -44,24 +44,30 @@ import com.ibm.watson.developer_cloud.text_to_speech.v1.model.Voice;
 
 public class MainActivity extends AppCompatActivity {
 
+    //Variabel Permission
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
     private boolean permissionToRecordAccepted = false;
     String[] permissions = {Manifest.permission.RECORD_AUDIO};
-    private static String TAG = "MainActivity";
 
+    //Variabel User Sebagai Parameter pada Konstruktor Class Conversation Message
     private static final String USER_USER = "user";
     private static final String USER_WATSON = "watson";
 
+    //Variabel Conversation
     private ConversationService conversationService;
     private Map<String, Object> conversationContext;
     private ArrayList<ConversationMessage> conversationLog;
 
+    //Stream Player adalah objek untuk memutar audio yang ada pada servis Text To Speech secara langsung (stream)
+    //Microphone Input Streeam untuk merekam suara dan mengirimkan langsung ke dalam servis Speech To Text
     private StreamPlayer streamPlayer;
     private MicrophoneInputStream capture;
+    //Variabel untuk indikator merekam suara atau tidak
     private boolean listening = false;
 
     TextView entryText;
 
+    //Aksi dari hasil permission user
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -81,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        //Make Permission
+        //Membuat Permission
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
 
         //Watson Text To Speech
@@ -89,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
         textService.setUsernameAndPassword(getString(R.string.watson_tts_user),
                 getString(R.string.watson_tts_pass));
 
+        //Deklarasi playButton dan aksi saat play button di klik
         ImageButton playButton = (ImageButton) findViewById(R.id.playButton);
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -99,9 +106,12 @@ public class MainActivity extends AppCompatActivity {
                         String message = "";
                         int index = conversationLog.size();
                         try {
+                            //variabel message akan diisi value pesan yang terdapat pada conversation log index terakhir
+                            //berarti pesan tersebut adalah pesan terakhir dari watson
                             message = String.valueOf(conversationLog.get(index-1).getMessageText());
                             streamPlayer = new StreamPlayer();
                             if (!message.equals("")){
+                                //memutar audio secara online (stream) dari servis Text To Speech
                                 streamPlayer.playStream(textService.synthesize(message, Voice.EN_LISA).execute());
                             }
                             else if (message.equals("0")){
@@ -115,12 +125,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        //Deklarasi recrdButton dan aksi saat record button di klik
         final ImageButton recordButton = (ImageButton) findViewById(R.id.record_button);
         recordButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (!listening){
                     Toast.makeText(MainActivity.this, "Listening ... click to stop", Toast.LENGTH_SHORT).show();
+                    //deklarasi fungsi di bawah
                     recordMessage();
                     listening=true;
                 }
@@ -380,19 +392,21 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //Funsi untuk merekam dan mengirim suara ke servis secara langsung (stream)
     private void recordMessage(){
         //Watson Speech To Text
         final SpeechToText speechService = new SpeechToText();
         speechService.setUsernameAndPassword(getString(R.string.watson_stt_user),
                 getString(R.string.watson_stt_pass));
 
+        //variabel callback untuk parameter pada fungsi recognize websocket servis Speech To Text
         final BaseRecognizeCallback callback = new BaseRecognizeCallback(){
             @Override
             public void onTranscription(SpeechResults speechResults) {
                 super.onTranscription(speechResults);
                 if (speechResults.getResults() != null && !speechResults.getResults().isEmpty()){
                     String text = speechResults.getResults().get(0).getAlternatives().get(0).getTranscript();
-
+                    //aksi utama .. deklarasi fungsi ada pada baris terakhir
                     showText(text);
                 }
             }
@@ -444,6 +458,7 @@ public class MainActivity extends AppCompatActivity {
                 .build();
     }
 
+    //fungsi menampilkan hasil transkripsi servis speech to text ke dalam Text View
     private void showText(final String text){
         runOnUiThread(new Runnable() {
             @Override
